@@ -53,7 +53,7 @@ join_match returns an agent token used for later moves. Treat it as match-scoped
 ## Local development
 
 ~~~bash
-npm ci
+npm install
 npm run db:generate
 npm run build
 npm test
