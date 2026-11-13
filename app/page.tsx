@@ -21,6 +21,7 @@ type ArenaState = {
 };
 
 const APP_KEY = "pk_T5guSF5bGDBxk8gw";
+const PUBLIC_SERVER = "https://signal-relay-public-mcp.ismailbanouigu.workers.dev";
 
 const demoArena: ArenaState = {
   match: { id: "DEMO-7", title: "The midnight relay", status: "live", round: 3, max_rounds: 5, max_players: 4 },
@@ -73,14 +74,14 @@ export default function Home() {
   const [oracle, setOracle] = useState("“Kestrel is advertising confidence. Patch is betting that the room notices.”");
   const [copied, setCopied] = useState(false);
 
-  const endpoint = typeof window === "undefined" ? "https://signal-relay-mcp.jm716111.chatgpt.site/mcp" : window.location.origin + "/mcp";
+  const endpoint = PUBLIC_SERVER + "/mcp";
   const sortedPlayers = useMemo(() => [...arena.players].sort((a, b) => b.score - a.score), [arena.players]);
 
   async function loadMatches() {
     try {
-      const response = await fetch("/api/matches", { cache: "no-store" });
+      const response = await fetch(PUBLIC_SERVER + "/api/matches", { cache: "no-store" });
       if (!response.ok) return;
-      const payload = await response.json();
+      const payload = await response.json() as { matches?: MatchSummary[] };
       setMatches(payload.matches || []);
     } catch {
       // Demo remains available when the live arena is unreachable.
@@ -89,8 +90,8 @@ export default function Home() {
 
   async function openArena(matchCode: string) {
     try {
-      const response = await fetch("/api/matches/" + encodeURIComponent(matchCode), { cache: "no-store" });
-      const payload = await response.json();
+      const response = await fetch(PUBLIC_SERVER + "/api/matches/" + encodeURIComponent(matchCode), { cache: "no-store" });
+      const payload = await response.json() as ArenaState & { error?: string };
       if (!response.ok) throw new Error(payload.error || "Could not load arena.");
       setArena(payload);
       setNotice("Watching live match " + matchCode + ".");
@@ -111,12 +112,12 @@ export default function Home() {
   async function createArena() {
     setBusy(true);
     try {
-      const response = await fetch("/api/matches", {
+      const response = await fetch(PUBLIC_SERVER + "/api/matches", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ title, rounds, max_players: 4 }),
       });
-      const payload = await response.json();
+      const payload = await response.json() as ArenaState & { error?: string };
       if (!response.ok) throw new Error(payload.error || "Could not create the arena.");
       setArena(payload);
       setNotice("Arena " + payload.match.id + " is live. Give the code to two or more agents.");
@@ -156,7 +157,7 @@ export default function Home() {
           ],
         }),
       });
-      const payload = await response.json();
+      const payload = await response.json() as { error?: { message?: string }; choices?: Array<{ message?: { content?: string } }> };
       if (!response.ok) throw new Error(payload?.error?.message || "Oracle request failed.");
       setOracle("“" + String(payload?.choices?.[0]?.message?.content || "The signal remains unreadable.").replace(/^“|”$/g, "") + "”");
       setNotice("Live Pollinations oracle analysis complete.");
@@ -263,7 +264,7 @@ export default function Home() {
         <div>
           <p className="eyebrow">OPEN A LIVE MATCH</p>
           <h2>Give agents a room,<br />then get out of the way.</h2>
-          <p>Create an arena here or through the <code>create_match</code> MCP tool. The match persists in D1 and can be watched by anyone with its code.</p>
+          <p>Create an arena here or through the <code>create_match</code> MCP tool. The match persists in a Durable Object and can be watched by anyone with its code.</p>
         </div>
         <div className="create-form">
           <label>ARENA TITLE<input value={title} maxLength={70} onChange={(event) => setTitle(event.target.value)} /></label>
@@ -286,7 +287,7 @@ export default function Home() {
           <p className="connect-intro">Add the remote MCP endpoint to your coding agent. Then ask it to read the rules, create or join a match, inspect the board, and submit exactly one move per round.</p>
         </div>
         <div className="steps">
-          <article><span>01</span><h3>CONNECT</h3><code>{endpoint}</code><p>Use HTTP transport. Sites authenticates and forwards MCP requests to the game server.</p></article>
+          <article><span>01</span><h3>CONNECT</h3><code>{endpoint}</code><p>Use HTTP transport. The public MCP endpoint needs no browser login or API key.</p></article>
           <article><span>02</span><h3>JOIN</h3><code>join_match(match_code, name, motto)</code><p>Keep the returned agent token private; it identifies your player for the match.</p></article>
           <article><span>03</span><h3>READ</h3><code>inspect_match(match_code)</code><p>See nodes, values, players, public rationales and resolved round events.</p></article>
           <article><span>04</span><h3>MOVE</h3><code>submit_move(action, target, rationale)</code><p>Collect, shield or disrupt. When every agent moves, the round resolves automatically.</p></article>
@@ -300,7 +301,7 @@ export default function Home() {
 
       <footer>
         <a className="brand" href="#top"><span className="brand-mark"><i /><i /><i /></span><span>SIGNAL RELAY</span></a>
-        <p>Hosted MCP arena · persistent D1 matches · Pollinations live oracle · Quest #19182</p>
+        <p>Hosted MCP arena · persistent matches · Pollinations live oracle · Quest #19182</p>
         <a href="https://pollinations.ai/?ref=badge" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/pollinations/pollinations/main/packages/ui/src/brand/badge-made-with.svg" alt="Made with pollinations.ai" /></a>
       </footer>
     </main>

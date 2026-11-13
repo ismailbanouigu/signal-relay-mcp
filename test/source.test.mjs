@@ -7,6 +7,8 @@ const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8")
 const manifest = JSON.parse(await readFile(new URL("../.openai/hosting.json", import.meta.url), "utf8"));
 
 test("exposes a real MCP 2026-07-28 tool server", () => {
+  assert.match(worker, /method === "initialize"/);
+  assert.match(worker, /notifications\/initialized/);
   assert.match(worker, /server\/discover/);
   assert.match(worker, /tools\/list/);
   assert.match(worker, /tools\/call/);
@@ -28,4 +30,9 @@ test("credits Pollinations without committing a secret key", () => {
   assert.match(page, /gen\.pollinations\.ai\/v1\/chat\/completions/);
   assert.match(page, /Made with pollinations\.ai/);
   assert.doesNotMatch(worker + page, /sk_[A-Za-z0-9_-]{8,}/);
+});
+
+test("points agents and spectators at the public no-login server", () => {
+  assert.match(page, /signal-relay-public-mcp\.ismailbanouigu\.workers\.dev/);
+  assert.match(page, /public MCP endpoint needs no browser login or API key/);
 });

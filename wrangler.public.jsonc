@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "signal-relay-public-mcp",
+  "main": "public-worker/index.ts",
+  "compatibility_date": "2026-11-13",
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "GAME",
+        "class_name": "GameHub"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["GameHub"]
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

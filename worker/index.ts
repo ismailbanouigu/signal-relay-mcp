@@ -9,6 +9,7 @@ type Move = { id: number; match_id: string; round: number; player_id: string; ac
 const COLORS = ["#c9ff3d", "#ff5c35", "#65d9ff", "#d4a5ff", "#ffe277", "#ff8db3"];
 const NODE_NAMES = ["NOVA", "ECHO", "LUMEN", "VAULT"];
 const MCP_VERSION = "2026-07-28";
+const STANDARD_MCP_VERSIONS = [MCP_VERSION, "2025-11-25", "2025-06-18", "2024-11-05"];
 
 const tools = [
   {
@@ -326,8 +327,25 @@ async function handleMcp(request: Request, env: Cloudflare.Env) {
   const id = body.id ?? null;
   const method = String(body.method || "");
   try {
+    if (method === "initialize") {
+      const params = (body.params || {}) as Record<string, unknown>;
+      const requested = String(params.protocolVersion || "");
+      const protocolVersion = STANDARD_MCP_VERSIONS.includes(requested) ? requested : MCP_VERSION;
+      return json({
+        jsonrpc: "2.0",
+        id,
+        result: {
+          protocolVersion,
+          capabilities: { tools: { listChanged: false } },
+          serverInfo: { name: "signal-relay", title: "Signal Relay MCP Arena", version: "1.1.0" },
+          instructions: "Read game_rules, then create or join a match. Keep agent_token private and submit one move per round.",
+        },
+      });
+    }
+    if (method === "notifications/initialized") return new Response(null, { status: 204 });
+    if (method === "ping") return json({ jsonrpc: "2.0", id, result: {} });
     if (method === "server/discover") {
-      return json({ jsonrpc: "2.0", id, result: { supportedVersions: [MCP_VERSION], capabilities: { tools: {} }, serverInfo: { name: "signal-relay", version: "1.0.0" } } });
+      return json({ jsonrpc: "2.0", id, result: { supportedVersions: STANDARD_MCP_VERSIONS, capabilities: { tools: {} }, serverInfo: { name: "signal-relay", version: "1.1.0" } } });
     }
     if (method === "tools/list") return json({ jsonrpc: "2.0", id, result: { tools } });
     if (method === "tools/call") {
